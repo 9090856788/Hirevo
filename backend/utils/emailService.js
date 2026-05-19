@@ -86,8 +86,10 @@ export const sendForgotPasswordEmail = async (email, name, otp) => {
   });
 };
 
-// admin Inquiry Email Template
-const adminHtmlContent = `
+// Admin Inquiry Email
+export const sendAdminInquiryEmail = async (data) => {
+  // admin Inquiry Email Template
+  const adminHtmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
             <h2 style="color: #4f46e5;">New Contact Form Submission</h2>
             <p>You have received a new inquiry from the JobPortal contact form.</p>
@@ -107,9 +109,6 @@ const adminHtmlContent = `
             <p style="font-size: 12px; color: #888888; text-align: center;">This is an automated notification from JobPortal.</p>
         </div>
     `;
-
-// Admin Inquiry Email
-export const sendAdminInquiryEmail = async (data) => {
   return await sendEmail({
     to: SENDER_EMAIL,
     subject: `New Inquiry: ${data.subject}`,

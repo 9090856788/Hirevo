@@ -1,6 +1,9 @@
-import User from "../models/userSchema";
+import User from "../models/userSchema.js";
 import bcrypt from "bcryptjs";
-import { sendVerificationEmail } from "../utils/emailService";
+import {
+  sendVerificationEmail,
+  sendForgotPasswordEmail,
+} from "../utils/emailService.js";
 import jwt from "jsonwebtoken";
 
 // Register User API endpoints
@@ -125,6 +128,89 @@ export const verifyEmail = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Email verified successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+// forgot password API endpoints
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User with this email does not exist",
+      });
+    }
+
+    const resetOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
+    user.resetPasswordOTP = resetOTP;
+    user.resetPasswordOTPExpiry = resetOTPExpires;
+    await user.save();
+    // send reset password email with OTP
+    try {
+      await sendForgotPasswordEmail(email, user.name, resetOTP);
+    } catch (error) {
+      console.error("Error sending reset password email:", error);
+    }
+    res.status(200).json({
+      success: true,
+      message: "Reset password OTP sent to your email",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+// reset password API endpoints
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, OTP and new password are required",
+      });
+    }
+    const user = await User.findOne({
+      email,
+      resetPasswordOTP: otp,
+      resetPasswordOTPExpiry: { $gt: new Date() },
+    });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or OTP",
+      });
+    }
+    // Update the user's password
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpiry = undefined;
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message:
+        "Password reset successfully, Now you can login with your new password",
     });
   } catch (error) {
     console.error(error);
