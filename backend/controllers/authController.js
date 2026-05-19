@@ -9,7 +9,13 @@ import jwt from "jsonwebtoken";
 // Register User API endpoints
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, otp, password } = req.body;
+    const { name, email, role, password } = req.body;
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, password and role are required",
+      });
+    }
     const existUser = await User.findOne({ email });
     if (existUser) {
       return res.status(400).json({
@@ -19,8 +25,7 @@ export const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    role = userRole || "user";
-
+    const userRole = role || "user";
     // generate 6 digit OTP and save to DB (for email verification)
     const verificationOTP = Math.floor(
       100000 + Math.random() * 900000,
@@ -31,7 +36,7 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role,
+      role: userRole,
       verificationOTP,
       verificationOTPExpiry: verificationOTPExpires,
       isVerified: false,
@@ -59,6 +64,12 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
     const existUser = await User.findOne({ email });
     if (!existUser) {
       return res.status(400).json({

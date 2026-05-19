@@ -21,8 +21,7 @@ const sendEmail = async ({ to, subject, htmlContent }) => {
         accept: "application/json",
       },
       body: JSON.stringify({
-        name: "Hirevo Team",
-        sender: { email: SENDER_EMAIL },
+        sender: { name: "Hirevo Team", email: SENDER_EMAIL },
         to: [{ email: to }],
         subject,
         htmlContent,
